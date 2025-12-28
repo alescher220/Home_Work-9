@@ -1,6 +1,7 @@
 from selene import browser, have, be
 import os
 from pathlib import Path
+from data.user import User
 
 
 class RegistrationPage:
@@ -78,3 +79,36 @@ class RegistrationPage:
     def should_have_registered(self, *rows: tuple[str, str]):
         browser.element('.modal-header').should(have.text('Thanks for submitting the form'))
         browser.all('.table-responsive td:nth-child(2)').should(have.texts(*[r[1] for r in rows]))
+
+    def register(self, user: User):
+        return self.fill_first_name(user.first_name) \
+            .fill_last_name(user.last_name) \
+            .fill_email(user.email) \
+            .select_gender(male=user.gender is Gender.MALE) \
+            .fill_mobile(user.mobile) \
+            .fill_date_of_birth(user.birth_date.year,
+                                user.birth_date.month,
+                                user.birth_date.day) \
+            .fill_subjects(*user.subjects) \
+            .select_hobbies(*(h.value for h in user.hobbies)) \
+            .upload_picture(user.picture) \
+            .fill_address(user.address) \
+            .scroll_to_bottom() \
+            .select_state(user.state) \
+            .select_city(user.city) \
+            .submit()
+
+    def should_have_registered(self, user: User):
+        rows = [
+            ('Student Name', f'{user.first_name} {user.last_name}'),
+            ('Student Email', user.email),
+            ('Gender', user.gender.value),
+            ('Mobile', user.mobile),
+            ('Date of Birth', f'{user.birth_date.day} {user.birth_date:%B},{user.birth_date.year}'),
+            ('Subjects', ','.join(user.subjects)),
+            ('Hobbies', ','.join(h.name.capitalize() for h in user.hobbies)),
+            ('Picture', user.picture),
+            ('Address', user.address),
+            ('State and City', f'{user.state} {user.city}'),
+        ]
+        self.should_have_registered(*rows)
